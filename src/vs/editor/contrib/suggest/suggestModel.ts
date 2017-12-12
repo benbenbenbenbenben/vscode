@@ -59,18 +59,6 @@ export class LineContext {
 		return true;
 	}
 
-	static isInEditableRange(editor: ICodeEditor): boolean {
-		const model = editor.getModel();
-		const position = editor.getPosition();
-		if (model.hasEditableRange()) {
-			const editableRange = model.getEditableRange();
-			if (!editableRange.containsPosition(position)) {
-				return false;
-			}
-		}
-		return true;
-	}
-
 	readonly lineNumber: number;
 	readonly column: number;
 	readonly leadingLineContent: string;
@@ -259,17 +247,14 @@ export class SuggestModel implements IDisposable {
 		this._currentPosition = this._editor.getPosition();
 
 		if (!e.selection.isEmpty()
-			|| e.source !== 'keyboard'
 			|| e.reason !== CursorChangeReason.NotSet
+			|| (e.source !== 'keyboard' && e.source !== 'deleteLeft')
 		) {
-
-			if (this._state === State.Idle) {
-				// Early exit if nothing needs to be done!
-				// Leave some form of early exit check here if you wish to continue being a cursor position change listener ;)
-				return;
+			// Early exit if nothing needs to be done!
+			// Leave some form of early exit check here if you wish to continue being a cursor position change listener ;)
+			if (this._state !== State.Idle) {
+				this.cancel();
 			}
-
-			this.cancel();
 			return;
 		}
 
@@ -292,9 +277,9 @@ export class SuggestModel implements IDisposable {
 
 				this.cancel();
 
-				if (LineContext.shouldAutoTrigger(this._editor)) {
-					this._triggerAutoSuggestPromise = TPromise.timeout(this._quickSuggestDelay);
-					this._triggerAutoSuggestPromise.then(() => {
+				this._triggerAutoSuggestPromise = TPromise.timeout(this._quickSuggestDelay);
+				this._triggerAutoSuggestPromise.then(() => {
+					if (LineContext.shouldAutoTrigger(this._editor)) {
 						const model = this._editor.getModel();
 						const pos = this._editor.getPosition();
 
@@ -322,10 +307,10 @@ export class SuggestModel implements IDisposable {
 							}
 						}
 
-						this._triggerAutoSuggestPromise = null;
 						this.trigger({ auto: true });
-					});
-				}
+					}
+					this._triggerAutoSuggestPromise = null;
+				});
 			}
 		}
 	}
@@ -354,10 +339,6 @@ export class SuggestModel implements IDisposable {
 		}
 		const auto = context.auto;
 		const ctx = new LineContext(model, this._editor.getPosition(), auto);
-
-		if (!LineContext.isInEditableRange(this._editor)) {
-			return;
-		}
 
 		// Cancel previous requests, change state & update UI
 		this.cancel(retrigger);

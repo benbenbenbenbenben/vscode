@@ -363,10 +363,6 @@ export class DefaultSettingsRenderer extends Disposable implements IPreferencesR
 		this.settingHighlighter.clear(true);
 	}
 
-	public collapseAll() {
-		this.settingsGroupTitleRenderer.collapseAll();
-	}
-
 	public updatePreference(key: string, value: any, source: ISetting): void {
 	}
 }
@@ -501,15 +497,6 @@ export class SettingsGroupTitleRenderer extends Disposable implements HiddenArea
 		}
 	}
 
-	public collapseAll() {
-		this.editor.setPosition({ lineNumber: 1, column: 1 });
-		this.hiddenGroups = this.settingsGroups.slice();
-		for (const groupTitleWidget of this.settingsGroupTitleWidgets) {
-			groupTitleWidget.toggleCollapse(true);
-		}
-		this._onHiddenAreasChanged.fire();
-	}
-
 	private onToggled(collapsed: boolean, group: ISettingsGroup) {
 		const index = this.hiddenGroups.indexOf(group);
 		if (collapsed) {
@@ -557,8 +544,8 @@ export class HiddenAreasRenderer extends Disposable {
 }
 
 export class FeedbackWidgetRenderer extends Disposable {
-	private static DEFAULT_COMMENT_TEXT = 'Replace this comment with any text feedback.';
-	private static INSTRUCTION_TEXT = [
+	private static readonly DEFAULT_COMMENT_TEXT = 'Replace this comment with any text feedback.';
+	private static readonly INSTRUCTION_TEXT = [
 		'// Modify the "resultScores" section to contain only your expected results. Assign scores to indicate their relevance.',
 		'// Results present in "resultScores" will be automatically "boosted" for this query, if they are not already at the top of the result set.',
 		'// Add phrase pairs to the "alts" section to have them considered to be synonyms in queries.'
@@ -619,7 +606,7 @@ export class FeedbackWidgetRenderer extends Disposable {
 			JSON.stringify(feedbackQuery, undefined, '    ') + '\n\n' +
 			actualResultNames.map(name => `// ${name}: ${result.metadata.scoredResults[name]}`).join('\n');
 
-		this.editorService.openEditor({ contents, language: 'json' }, /*sideBySide=*/true).then(feedbackEditor => {
+		this.editorService.openEditor({ contents, language: 'jsonc' }, /*sideBySide=*/true).then(feedbackEditor => {
 			const sendFeedbackWidget = this._register(this.instantiationService.createInstance(FloatingClickWidget, feedbackEditor.getControl(), 'Send feedback', null));
 			sendFeedbackWidget.render();
 
@@ -843,7 +830,7 @@ export class HighlightMatchesRenderer extends Disposable {
 		}
 	}
 
-	private static _FIND_MATCH = ModelDecorationOptions.register({
+	private static readonly _FIND_MATCH = ModelDecorationOptions.register({
 		stickiness: editorCommon.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
 		className: 'findMatch'
 	});
@@ -1233,14 +1220,14 @@ class UnsupportedSettingsRenderer extends Disposable {
 		super.dispose();
 	}
 
-	private static _DIM_CONFIGUARATION_ = ModelDecorationOptions.register({
+	private static readonly _DIM_CONFIGUARATION_ = ModelDecorationOptions.register({
 		stickiness: editorCommon.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
 		inlineClassName: 'dim-configuration',
 		beforeContentClassName: 'unsupportedWorkbenhSettingInfo',
 		hoverMessage: new MarkdownString().appendText(nls.localize('unsupportedWorkbenchSetting', "This setting cannot be applied now. It will be applied when you open this folder directly."))
 	});
 
-	private static _DIM_CONFIGUARATION_DEV_MODE = ModelDecorationOptions.register({
+	private static readonly _DIM_CONFIGUARATION_DEV_MODE = ModelDecorationOptions.register({
 		stickiness: editorCommon.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
 		inlineClassName: 'dim-configuration',
 		beforeContentClassName: 'unsupportedWorkbenhSettingInfo',
@@ -1283,7 +1270,7 @@ class WorkspaceConfigurationRenderer extends Disposable {
 		}
 	}
 
-	private static _DIM_CONFIGURATION_ = ModelDecorationOptions.register({
+	private static readonly _DIM_CONFIGURATION_ = ModelDecorationOptions.register({
 		stickiness: editorCommon.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
 		inlineClassName: 'dim-configuration'
 	});

@@ -95,8 +95,8 @@ namespace ConfigureTaskAction {
 
 class CloseMessageAction extends Action {
 
-	public static ID = 'workbench.action.build.closeMessage';
-	public static TEXT = nls.localize('CloseMessageAction.label', 'Close');
+	public static readonly ID = 'workbench.action.build.closeMessage';
+	public static readonly TEXT = nls.localize('CloseMessageAction.label', 'Close');
 
 	public closeFunction: () => void;
 
@@ -443,9 +443,9 @@ interface TaskQuickPickEntry extends IPickOpenEntry {
 class TaskService implements ITaskService {
 
 	// private static autoDetectTelemetryName: string = 'taskServer.autoDetect';
-	private static RecentlyUsedTasks_Key = 'workbench.tasks.recentlyUsedTasks';
-	private static RanTaskBefore_Key = 'workbench.tasks.ranTaskBefore';
-	private static IgnoreTask010DonotShowAgain_key = 'workbench.tasks.ignoreTask010Shown';
+	private static readonly RecentlyUsedTasks_Key = 'workbench.tasks.recentlyUsedTasks';
+	private static readonly RanTaskBefore_Key = 'workbench.tasks.ranTaskBefore';
+	private static readonly IgnoreTask010DonotShowAgain_key = 'workbench.tasks.ignoreTask010Shown';
 
 	private static CustomizationTelemetryEventName: string = 'taskService.customize';
 	public static TemplateTelemetryEventName: string = 'taskService.template';
@@ -1666,7 +1666,7 @@ class TaskService implements ITaskService {
 		if (this._taskSystem instanceof TerminalTaskSystem) {
 			return false;
 		}
-		if (this._taskSystem.canAutoTerminate() || this.messageService.confirmSync({
+		if (this._taskSystem.canAutoTerminate() || this.messageService.confirm({
 			message: nls.localize('TaskSystem.runningTask', 'There is a task running. Do you want to terminate it?'),
 			primaryButton: nls.localize({ key: 'TaskSystem.terminateTask', comment: ['&& denotes a mnemonic'] }, "&&Terminate Task"),
 			type: 'question'
@@ -1687,7 +1687,7 @@ class TaskService implements ITaskService {
 					this.disposeTaskSystemListeners();
 					return false; // no veto
 				} else if (code && code === TerminateResponseCode.ProcessNotFound) {
-					return !this.messageService.confirmSync({
+					return !this.messageService.confirm({
 						message: nls.localize('TaskSystem.noProcess', 'The launched task doesn\'t exist anymore. If the task spawned background processes exiting VS Code might result in orphaned processes. To avoid this start the last background process with a wait flag.'),
 						primaryButton: nls.localize({ key: 'TaskSystem.exitAnyways', comment: ['&& denotes a mnemonic'] }, "&&Exit Anyways"),
 						type: 'info'

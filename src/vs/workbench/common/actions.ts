@@ -57,13 +57,20 @@ Registry.add(Extensions.WorkbenchActions, new class implements IWorkbenchActionR
 
 		// menu item
 		// TODO@Rob slightly weird if-check required because of
-		// https://github.com/Microsoft/vscode/blob/master/src/vs/workbench/parts/search/browser/search.contribution.ts#L266
+		// https://github.com/Microsoft/vscode/blob/master/src/vs/workbench/parts/search/electron-browser/search.contribution.ts#L266
 		if (descriptor.label) {
+
+			let idx = alias.indexOf(': ');
+			let categoryOriginal;
+			if (idx > 0) {
+				categoryOriginal = alias.substr(0, idx);
+				alias = alias.substr(idx + 2);
+			}
 
 			const command = {
 				id: descriptor.id,
 				title: { value: descriptor.label, original: alias },
-				category
+				category: category && { value: category, original: categoryOriginal }
 			};
 
 			MenuRegistry.addCommand(command);

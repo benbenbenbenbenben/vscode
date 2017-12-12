@@ -78,8 +78,8 @@ export class StringIterator implements IKeyIterator {
 
 export class PathIterator implements IKeyIterator {
 
-	private static _fwd = '/'.charCodeAt(0);
-	private static _bwd = '\\'.charCodeAt(0);
+	private static readonly _fwd = '/'.charCodeAt(0);
+	private static readonly _bwd = '\\'.charCodeAt(0);
 
 	private _value: string;
 	private _from: number;
@@ -552,18 +552,6 @@ export class LinkedMap<K, V> {
 				callbackfn(current.value, current.key, this);
 			}
 			current = current.next;
-		}
-	}
-
-	public forEachReverse(callbackfn: (value: V, key: K, map: LinkedMap<K, V>) => void, thisArg?: any): void {
-		let current = this._tail;
-		while (current) {
-			if (thisArg) {
-				callbackfn.bind(thisArg)(current.value, current.key, this);
-			} else {
-				callbackfn(current.value, current.key, this);
-			}
-			current = current.previous;
 		}
 	}
 

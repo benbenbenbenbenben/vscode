@@ -6,7 +6,7 @@
 
 import { ITimerService, IStartupMetrics, IInitData, IMemoryInfo } from 'vs/workbench/services/timer/common/timerService';
 import { virtualMachineHint } from 'vs/base/node/id';
-
+import * as perf from 'vs/base/common/performance';
 import * as os from 'os';
 
 export class TimerService implements ITimerService {
@@ -16,9 +16,6 @@ export class TimerService implements ITimerService {
 	public readonly start: number;
 	public readonly appReady: number;
 	public readonly windowLoad: number;
-
-	public readonly beforeLoadWorkbenchMain: number;
-	public readonly afterLoadWorkbenchMain: number;
 
 	public readonly isInitialStartup: boolean;
 	public readonly hasAccessibilitySupport: boolean;
@@ -32,19 +29,12 @@ export class TimerService implements ITimerService {
 	public beforeExtensionLoad: number;
 	public afterExtensionLoad: number;
 
-	public restoreViewletDuration: number;
-	public restoreEditorsDuration: number;
-
-
 	private _startupMetrics: IStartupMetrics;
 
 	constructor(initData: IInitData, private isEmptyWorkbench: boolean) {
 		this.start = initData.start;
 		this.appReady = initData.appReady;
 		this.windowLoad = initData.windowLoad;
-
-		this.beforeLoadWorkbenchMain = initData.beforeLoadWorkbenchMain;
-		this.afterLoadWorkbenchMain = initData.afterLoadWorkbenchMain;
 
 		this.isInitialStartup = initData.isInitialStartup;
 		this.hasAccessibilitySupport = initData.hasAccessibilitySupport;
@@ -88,7 +78,7 @@ export class TimerService implements ITimerService {
 				cpus = { count: rawCpus.length, speed: rawCpus[0].speed, model: rawCpus[0].model };
 			}
 		} catch (error) {
-			console.error(error); // be on the safe side with these hardware method calls
+			// ignore, be on the safe side with these hardware method calls
 		}
 
 		this._startupMetrics = {
@@ -97,11 +87,11 @@ export class TimerService implements ITimerService {
 			timers: {
 				ellapsedExtensions: this.afterExtensionLoad - this.beforeExtensionLoad,
 				ellapsedExtensionsReady: this.afterExtensionLoad - start,
-				ellapsedRequire: this.afterLoadWorkbenchMain - this.beforeLoadWorkbenchMain,
-				ellapsedViewletRestore: this.restoreViewletDuration,
-				ellapsedEditorRestore: this.restoreEditorsDuration,
+				ellapsedRequire: perf.getDuration('willLoadWorkbenchMain', 'didLoadWorkbenchMain'),
+				ellapsedEditorRestore: perf.getDuration('willRestoreEditors', 'didRestoreEditors'),
+				ellapsedViewletRestore: perf.getDuration('willRestoreViewlet', 'didRestoreViewlet'),
 				ellapsedWorkbench: this.workbenchStarted - this.beforeWorkbenchOpen,
-				ellapsedWindowLoadToRequire: this.beforeLoadWorkbenchMain - this.windowLoad,
+				ellapsedWindowLoadToRequire: perf.getEntry('mark', 'willLoadWorkbenchMain').startTime - this.windowLoad,
 				ellapsedTimersToTimersComputed: Date.now() - now
 			},
 			platform,

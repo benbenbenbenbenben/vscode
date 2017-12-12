@@ -8,7 +8,6 @@ import { TPromise } from 'vs/base/common/winjs.base';
 import paths = require('vs/base/common/paths');
 import URI from 'vs/base/common/uri';
 import glob = require('vs/base/common/glob');
-import events = require('vs/base/common/events');
 import { isLinux } from 'vs/base/common/platform';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import Event from 'vs/base/common/event';
@@ -245,12 +244,11 @@ export interface IFileChange {
 	resource: URI;
 }
 
-export class FileChangesEvent extends events.Event {
+export class FileChangesEvent {
+
 	private _changes: IFileChange[];
 
 	constructor(changes: IFileChange[]) {
-		super();
-
 		this._changes = changes;
 	}
 
@@ -528,6 +526,12 @@ export interface IUpdateContentOptions {
 	overwriteReadonly?: boolean;
 
 	/**
+	 * Wether to write to the file as elevated (admin) user. When setting this option a prompt will
+	 * ask the user to authenticate as super user.
+	 */
+	writeElevated?: boolean;
+
+	/**
 	 * The last known modification time of the file. This can be used to prevent dirty writes.
 	 */
 	mtime?: number;
@@ -571,6 +575,7 @@ export enum FileOperationResult {
 	FILE_MODIFIED_SINCE,
 	FILE_MOVE_CONFLICT,
 	FILE_READ_ONLY,
+	FILE_PERMISSION_DENIED,
 	FILE_TOO_LARGE,
 	FILE_INVALID_PATH
 }

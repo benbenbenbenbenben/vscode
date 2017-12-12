@@ -28,6 +28,7 @@ import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import * as pfs from 'vs/base/node/pfs';
 import * as os from 'os';
 import { flatten, distinct } from 'vs/base/common/arrays';
+import { IEnvironmentService } from 'vs/platform/environment/common/environment';
 
 interface IExtensionsContent {
 	recommendations: string[];
@@ -61,11 +62,12 @@ export class ExtensionTipsService extends Disposable implements IExtensionTipsSe
 		@IWorkspaceContextService private contextService: IWorkspaceContextService,
 		@IConfigurationService private configurationService: IConfigurationService,
 		@IMessageService private messageService: IMessageService,
-		@ITelemetryService private telemetryService: ITelemetryService
+		@ITelemetryService private telemetryService: ITelemetryService,
+		@IEnvironmentService private environmentService: IEnvironmentService
 	) {
 		super();
 
-		if (!this._galleryService.isEnabled()) {
+		if (!this._galleryService.isEnabled() || this.environmentService.extensionDevelopmentPath) {
 			return;
 		}
 
@@ -221,11 +223,7 @@ export class ExtensionTipsService extends Disposable implements IExtensionTipsSe
 	private _suggest(model: IModel): void {
 		const uri = model.uri;
 
-		if (!uri) {
-			return;
-		}
-
-		if (uri.scheme === Schemas.inMemory || uri.scheme === Schemas.internal || uri.scheme === Schemas.vscode) {
+		if (!uri || uri.scheme !== Schemas.file) {
 			return;
 		}
 
@@ -357,7 +355,7 @@ export class ExtensionTipsService extends Disposable implements IExtensionTipsSe
 
 			this.extensionsService.getInstalled(LocalExtensionType.User).done(local => {
 				const recommendations = allRecommendations
-					.filter(id => local.every(local => `${local.manifest.publisher}.${local.manifest.name}` !== id));
+					.filter(id => local.every(local => `${local.manifest.publisher.toLowerCase()}.${local.manifest.name.toLowerCase()}` !== id));
 
 				if (!recommendations.length) {
 					return;

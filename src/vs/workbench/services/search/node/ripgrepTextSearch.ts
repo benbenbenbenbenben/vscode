@@ -121,7 +121,7 @@ export class RipgrepEngine {
 					this.isDone = true;
 					let displayMsg: string;
 					process.removeListener('exit', this.killRgProcFn);
-					if (stderr && !gotData && (displayMsg = this.rgErrorMsgForDisplay(stderr))) {
+					if (stderr && !gotData && (displayMsg = rgErrorMsgForDisplay(stderr))) {
 						done(new Error(displayMsg), {
 							limitHit: false,
 							stats: null
@@ -136,35 +136,35 @@ export class RipgrepEngine {
 			});
 		});
 	}
+}
 
-	/**
-	 * Read the first line of stderr and return an error for display or undefined, based on a whitelist.
-	 * Ripgrep produces stderr output which is not from a fatal error, and we only want the search to be
-	 * "failed" when a fatal error was produced.
-	 */
-	private rgErrorMsgForDisplay(msg: string): string | undefined {
-		const firstLine = msg.split('\n')[0];
+/**
+ * Read the first line of stderr and return an error for display or undefined, based on a whitelist.
+ * Ripgrep produces stderr output which is not from a fatal error, and we only want the search to be
+ * "failed" when a fatal error was produced.
+ */
+export function rgErrorMsgForDisplay(msg: string): string | undefined {
+	const firstLine = msg.split('\n')[0];
 
-		if (strings.startsWith(firstLine, 'Error parsing regex')) {
-			return firstLine;
-		}
-
-		if (strings.startsWith(firstLine, 'error parsing glob') ||
-			strings.startsWith(firstLine, 'unsupported encoding')) {
-			// Uppercase first letter
-			return firstLine.charAt(0).toUpperCase() + firstLine.substr(1);
-		}
-
-		return undefined;
+	if (strings.startsWith(firstLine, 'Error parsing regex')) {
+		return firstLine;
 	}
+
+	if (strings.startsWith(firstLine, 'error parsing glob') ||
+		strings.startsWith(firstLine, 'unsupported encoding')) {
+		// Uppercase first letter
+		return firstLine.charAt(0).toUpperCase() + firstLine.substr(1);
+	}
+
+	return undefined;
 }
 
 export class RipgrepParser extends EventEmitter {
-	private static RESULT_REGEX = /^\u001b\[m(\d+)\u001b\[m:(.*)(\r?)/;
-	private static FILE_REGEX = /^\u001b\[m(.+)\u001b\[m$/;
+	private static readonly RESULT_REGEX = /^\u001b\[m(\d+)\u001b\[m:(.*)(\r?)/;
+	private static readonly FILE_REGEX = /^\u001b\[m(.+)\u001b\[m$/;
 
-	public static MATCH_START_MARKER = '\u001b[m\u001b[31m';
-	public static MATCH_END_MARKER = '\u001b[m';
+	public static readonly MATCH_START_MARKER = '\u001b[m\u001b[31m';
+	public static readonly MATCH_END_MARKER = '\u001b[m';
 
 	private fileMatch: FileMatch;
 	private remainder: string;
