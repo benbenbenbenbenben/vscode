@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-
 import { CancellationToken, Uri, Event } from 'vscode';
 import * as Proto from './protocol';
 import API from './utils/api';
@@ -11,20 +10,12 @@ import { TypeScriptServerPlugin } from './utils/plugins';
 import { TypeScriptServiceConfiguration } from './utils/configuration';
 import Logger from './utils/logger';
 
-export interface ITypeScriptServiceClientHost {
-	syntaxDiagnosticsReceived(event: Proto.DiagnosticEvent): void;
-	semanticDiagnosticsReceived(event: Proto.DiagnosticEvent): void;
-	configFileDiagnosticsReceived(event: Proto.ConfigFileDiagnosticEvent): void;
-	populateService(): void;
-}
-
-
 export interface ITypeScriptServiceClient {
 	normalizePath(resource: Uri): string | null;
 	asUrl(filepath: string): Uri;
 	getWorkspaceRootForResource(resource: Uri): string | undefined;
 
-	onTsServerStarted: Event<void>;
+	onTsServerStarted: Event<API>;
 	onProjectLanguageServiceStateChanged: Event<Proto.ProjectLanguageServiceStateEventBody>;
 	onDidBeginInstallTypings: Event<Proto.BeginInstallTypesEventBody>;
 	onDidEndInstallTypings: Event<Proto.EndInstallTypesEventBody>;
@@ -61,11 +52,12 @@ export interface ITypeScriptServiceClient {
 	execute(command: 'navtree', args: Proto.FileRequestArgs, token?: CancellationToken): Promise<Proto.NavTreeResponse>;
 	execute(command: 'getCodeFixes', args: Proto.CodeFixRequestArgs, token?: CancellationToken): Promise<Proto.GetCodeFixesResponse>;
 	execute(command: 'getSupportedCodeFixes', args: null, token?: CancellationToken): Promise<Proto.GetSupportedCodeFixesResponse>;
+	execute(command: 'getCombinedCodeFix', args: Proto.GetCombinedCodeFixRequestArgs, token?: CancellationToken): Promise<Proto.GetCombinedCodeFixResponse>;
 	execute(command: 'docCommentTemplate', args: Proto.FileLocationRequestArgs, token?: CancellationToken): Promise<Proto.DocCommandTemplateResponse>;
 	execute(command: 'getApplicableRefactors', args: Proto.GetApplicableRefactorsRequestArgs, token?: CancellationToken): Promise<Proto.GetApplicableRefactorsResponse>;
 	execute(command: 'getEditsForRefactor', args: Proto.GetEditsForRefactorRequestArgs, token?: CancellationToken): Promise<Proto.GetEditsForRefactorResponse>;
 	execute(command: 'applyCodeActionCommand', args: Proto.ApplyCodeActionCommandRequestArgs, token?: CancellationToken): Promise<Proto.ApplyCodeActionCommandResponse>;
-	// execute(command: 'compileOnSaveAffectedFileList', args: Proto.CompileOnSaveEmitFileRequestArgs, token?: CancellationToken): Promise<Proto.CompileOnSaveAffectedFileListResponse>;
-	// execute(command: 'compileOnSaveEmitFile', args: Proto.CompileOnSaveEmitFileRequestArgs, token?: CancellationToken): Promise<any>;
+	execute(command: 'organizeImports', args: Proto.OrganizeImportsRequestArgs, token?: CancellationToken): Promise<Proto.OrganizeImportsResponse>;
+	execute(command: 'getOutliningSpans', args: Proto.FileRequestArgs, token: CancellationToken): Promise<Proto.OutliningSpansResponse>;
 	execute(command: string, args: any, expectedResult: boolean | CancellationToken, token?: CancellationToken): Promise<any>;
 }

@@ -22,7 +22,7 @@ import { IConfigurationService, IConfigurationChangeEvent } from 'vs/platform/co
 import { IWorkbenchEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IEditorGroupService } from 'vs/workbench/services/group/common/groupService';
 import { IDisposable, dispose } from 'vs/base/common/lifecycle';
-import nls = require('vs/nls');
+import * as nls from 'vs/nls';
 import * as labels from 'vs/base/common/labels';
 import { EditorInput, toResource } from 'vs/workbench/common/editor';
 import { IEnvironmentService } from 'vs/platform/environment/common/environment';
@@ -33,6 +33,7 @@ import { TITLE_BAR_ACTIVE_BACKGROUND, TITLE_BAR_ACTIVE_FOREGROUND, TITLE_BAR_INA
 import { isMacintosh, isWindows } from 'vs/base/common/platform';
 import URI from 'vs/base/common/uri';
 import { ILifecycleService, LifecyclePhase } from 'vs/platform/lifecycle/common/lifecycle';
+import { trim } from 'vs/base/common/strings';
 
 export class TitlebarPart extends Part implements ITitleService {
 
@@ -136,7 +137,7 @@ export class TitlebarPart extends Part implements ITitleService {
 
 	private getWindowTitle(): string {
 		let title = this.doGetWindowTitle();
-		if (!title) {
+		if (!trim(title)) {
 			title = this.environmentService.appNameLong;
 		}
 

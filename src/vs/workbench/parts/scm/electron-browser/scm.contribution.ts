@@ -23,7 +23,7 @@ import { IConfigurationRegistry, Extensions as ConfigurationExtensions } from 'v
 
 class OpenSCMViewletAction extends ToggleViewletAction {
 
-	static ID = VIEWLET_ID;
+	static readonly ID = VIEWLET_ID;
 	static LABEL = localize('toggleGitViewlet', "Show Git");
 
 	constructor(id: string, label: string, @IViewletService viewletService: IViewletService, @IWorkbenchEditorService editorService: IWorkbenchEditorService) {
@@ -45,10 +45,10 @@ const viewletDescriptor = new ViewletDescriptor(
 Registry.as<ViewletRegistry>(ViewletExtensions.Viewlets)
 	.registerViewlet(viewletDescriptor);
 
-Registry.as(WorkbenchExtensions.Workbench)
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench)
 	.registerWorkbenchContribution(StatusUpdater, LifecyclePhase.Running);
 
-Registry.as(WorkbenchExtensions.Workbench)
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench)
 	.registerWorkbenchContribution(StatusBarController, LifecyclePhase.Running);
 
 // Register Action to Open Viewlet
@@ -66,13 +66,25 @@ Registry.as<IWorkbenchActionRegistry>(WorkbenchActionExtensions.WorkbenchActions
 Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration).registerConfiguration({
 	id: 'scm',
 	order: 5,
+	title: localize('scmConfigurationTitle', "SCM"),
 	type: 'object',
 	properties: {
+		'scm.alwaysShowProviders': {
+			type: 'boolean',
+			description: localize('alwaysShowProviders', "Whether to always show the Source Control Provider section."),
+			default: false
+		},
 		'scm.diffDecorations': {
 			type: 'string',
 			enum: ['all', 'gutter', 'overview', 'none'],
 			default: 'all',
 			description: localize('diffDecorations', "Controls diff decorations in the editor.")
 		},
+		'scm.diffDecorationsGutterWidth': {
+			type: 'number',
+			enum: [1, 2, 3, 4, 5],
+			default: 3,
+			description: localize('diffGutterWidth', "Controls the width(px) of diff decorations in gutter (added & modified).")
+		}
 	}
 });

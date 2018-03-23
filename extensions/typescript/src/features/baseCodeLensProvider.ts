@@ -7,7 +7,8 @@ import { CodeLensProvider, CodeLens, CancellationToken, TextDocument, Range, Uri
 import * as Proto from '../protocol';
 
 import { ITypeScriptServiceClient } from '../typescriptService';
-import { tsTextSpanToVsRange } from '../utils/convert';
+import * as typeConverters from '../utils/typeConverters';
+import { escapeRegExp } from '../utils/regexp';
 
 export class ReferencesCodeLens extends CodeLens {
 	constructor(
@@ -19,12 +20,44 @@ export class ReferencesCodeLens extends CodeLens {
 	}
 }
 
+export class CachedNavTreeResponse {
+	private response?: Promise<Proto.NavTreeResponse>;
+	private version: number = -1;
+	private document: string = '';
+
+	public execute(
+		document: TextDocument,
+		f: () => Promise<Proto.NavTreeResponse>
+	) {
+		if (this.matches(document)) {
+			return this.response;
+		}
+
+		return this.update(document, f());
+	}
+
+	private matches(document: TextDocument): boolean {
+		return this.version === document.version && this.document === document.uri.toString();
+	}
+
+	private update(
+		document: TextDocument,
+		response: Promise<Proto.NavTreeResponse>
+	): Promise<Proto.NavTreeResponse> {
+		this.response = response;
+		this.version = document.version;
+		this.document = document.uri.toString();
+		return response;
+	}
+}
+
 export abstract class TypeScriptBaseCodeLensProvider implements CodeLensProvider {
 	private enabled: boolean = true;
 	private onDidChangeCodeLensesEmitter = new EventEmitter<void>();
 
 	public constructor(
-		protected client: ITypeScriptServiceClient
+		protected client: ITypeScriptServiceClient,
+		private cachedResponse: CachedNavTreeResponse
 	) { }
 
 	public get onDidChangeCodeLenses(): Event<void> {
@@ -47,11 +80,13 @@ export abstract class TypeScriptBaseCodeLensProvider implements CodeLensProvider
 		if (!filepath) {
 			return [];
 		}
+
 		try {
-			const response = await this.client.execute('navtree', { file: filepath }, token);
+			const response = await this.cachedResponse.execute(document, () => this.client.execute('navtree', { file: filepath }, token));
 			if (!response) {
 				return [];
 			}
+
 			const tree = response.body;
 			const referenceableSpans: Range[] = [];
 			if (tree && tree.childItems) {
@@ -101,10 +136,10 @@ export abstract class TypeScriptBaseCodeLensProvider implements CodeLensProvider
 			return null;
 		}
 
-		const range = tsTextSpanToVsRange(span);
+		const range = typeConverters.Range.fromTextSpan(span);
 		const text = document.getText(range);
 
-		const identifierMatch = new RegExp(`^(.*?(\\b|\\W))${(item.text || '').replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}(\\b|\\W)`, 'gm');
+		const identifierMatch = new RegExp(`^(.*?(\\b|\\W))${escapeRegExp(item.text || '')}(\\b|\\W)`, 'gm');
 		const match = identifierMatch.exec(text);
 		const prefixLength = match ? match.index + match[1].length : 0;
 		const startOffset = document.offsetAt(new Position(range.start.line, range.start.character)) + prefixLength;

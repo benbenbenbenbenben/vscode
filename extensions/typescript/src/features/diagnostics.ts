@@ -4,21 +4,53 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Diagnostic, DiagnosticCollection, languages, Uri } from 'vscode';
-import { ITypeScriptServiceClient } from '../typescriptService';
 
-export default class DiagnosticsManager {
+class DiagnosticSet {
+	private _map: ObjectMap<Diagnostic[]> = Object.create(null);
 
-	private syntaxDiagnostics: ObjectMap<Diagnostic[]>;
-	private semanticDiagnostics: ObjectMap<Diagnostic[]>;
+	public set(
+		file: Uri,
+		diagnostics: Diagnostic[]
+	) {
+		this._map[this.key(file)] = diagnostics;
+	}
+
+	public get(
+		file: Uri
+	): Diagnostic[] {
+		return this._map[this.key(file)] || [];
+	}
+
+	public clear(): void {
+		this._map = Object.create(null);
+	}
+
+	private key(file: Uri): string {
+		return file.toString(true);
+	}
+}
+
+export enum DiagnosticKind {
+	Syntax,
+	Semantic,
+	Suggestion
+}
+
+const allDiagnosticKinds = [DiagnosticKind.Syntax, DiagnosticKind.Semantic, DiagnosticKind.Suggestion];
+
+export class DiagnosticsManager {
+
+	private readonly diagnostics = new Map<DiagnosticKind, DiagnosticSet>();
 	private readonly currentDiagnostics: DiagnosticCollection;
 	private _validate: boolean = true;
 
 	constructor(
-		language: string,
-		private readonly client: ITypeScriptServiceClient
+		language: string
 	) {
-		this.syntaxDiagnostics = Object.create(null);
-		this.semanticDiagnostics = Object.create(null);
+		for (const kind of allDiagnosticKinds) {
+			this.diagnostics.set(kind, new DiagnosticSet());
+		}
+
 		this.currentDiagnostics = languages.createDiagnosticCollection(language);
 	}
 
@@ -28,8 +60,10 @@ export default class DiagnosticsManager {
 
 	public reInitialize(): void {
 		this.currentDiagnostics.clear();
-		this.syntaxDiagnostics = Object.create(null);
-		this.semanticDiagnostics = Object.create(null);
+
+		for (const diagnosticSet of this.diagnostics.values()) {
+			diagnosticSet.clear();
+		}
 	}
 
 	public set validate(value: boolean) {
@@ -42,26 +76,24 @@ export default class DiagnosticsManager {
 		}
 	}
 
-	public syntaxDiagnosticsReceived(file: Uri, syntaxDiagnostics: Diagnostic[]): void {
-		this.syntaxDiagnostics[this.key(file)] = syntaxDiagnostics;
-		this.updateCurrentDiagnostics(file);
-	}
-
-	public semanticDiagnosticsReceived(file: Uri, semanticDiagnostics: Diagnostic[]): void {
-		this.semanticDiagnostics[this.key(file)] = semanticDiagnostics;
-		this.updateCurrentDiagnostics(file);
+	public diagnosticsReceived(
+		kind: DiagnosticKind,
+		file: Uri,
+		syntaxDiagnostics: Diagnostic[]
+	): void {
+		const diagnostics = this.diagnostics.get(kind);
+		if (diagnostics) {
+			diagnostics.set(file, syntaxDiagnostics);
+			this.updateCurrentDiagnostics(file);
+		}
 	}
 
 	public configFileDiagnosticsReceived(file: Uri, diagnostics: Diagnostic[]): void {
 		this.currentDiagnostics.set(file, diagnostics);
 	}
 
-	public delete(file: string): void {
-		this.currentDiagnostics.delete(this.client.asUrl(file));
-	}
-
-	private key(file: Uri): string {
-		return file.toString(true);
+	public delete(resource: Uri): void {
+		this.currentDiagnostics.delete(resource);
 	}
 
 	private updateCurrentDiagnostics(file: Uri) {
@@ -69,8 +101,14 @@ export default class DiagnosticsManager {
 			return;
 		}
 
-		const semanticDiagnostics = this.semanticDiagnostics[this.key(file)] || [];
-		const syntaxDiagnostics = this.syntaxDiagnostics[this.key(file)] || [];
-		this.currentDiagnostics.set(file, semanticDiagnostics.concat(syntaxDiagnostics));
+		const allDiagnostics = allDiagnosticKinds.reduce((sum, kind) => {
+			sum.push(...this.diagnostics.get(kind)!.get(file));
+			return sum;
+		}, [] as Diagnostic[]);
+		this.currentDiagnostics.set(file, allDiagnostics);
+	}
+
+	public getDiagnostics(file: Uri): Diagnostic[] {
+		return this.currentDiagnostics.get(file) || [];
 	}
 }
